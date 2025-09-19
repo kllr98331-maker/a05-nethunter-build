@@ -1,0 +1,40 @@
+name: Build Samsung A05 Kernel (NetHunter)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y git wget unzip build-essential \
+            bc libncurses5-dev bison flex libssl-dev \
+            gcc clang lld llvm python3 python3-pip curl megatools
+
+      - name: Download Samsung A05 Kernel source
+        run: |
+          megadl 'https://mega.nz/file/2MUjiTYK#Bf5auSu8Bv4S05UeUGwYsEJC8hHPgTl1PGXiTvHLpe8' --path kernel.zip
+          unzip kernel.zip -d kernel_src
+
+      - name: Copy your config
+        run: |
+          cp config_a05 kernel_src/arch/arm64/configs/a05_defconfig
+
+      - name: Build kernel
+        run: |
+          cd kernel_src
+          make a05_defconfig
+          make -j$(nproc)
+
+      - name: Upload compiled kernel
+        uses: actions/upload-artifact@v3
+        with:
+          name: kernel-build
+          path: kernel_src/arch/arm64/boot/
